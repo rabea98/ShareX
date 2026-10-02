@@ -218,6 +218,71 @@ namespace ShareX.HelpersLib
             return "";
         }
 
+        // HRESULT_FROM_WIN32(ERROR_UNTRUSTED_MOUNT_POINT)
+        private const int UntrustedMountPointHResult = unchecked((int)0x800701C0);
+
+        // When Windows RedirectionGuard is enforced for the process, junctions and symbolic links created by non-admin users
+        // (e.g. OneDrive "Documents" junction) can't be traversed. In that case returns the path with those links replaced by their targets.
+        public static string GetTraversablePath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return path;
+            }
+
+            try
+            {
+                File.GetAttributes(path);
+            }
+            catch (IOException e) when (e.HResult == UntrustedMountPointHResult)
+            {
+                string resolvedPath = ResolveLinks(path);
+                DebugHelper.WriteLine($"Path contains an untrusted mount point, using link target instead: \"{path}\" -> \"{resolvedPath}\"");
+                return resolvedPath;
+            }
+            catch
+            {
+            }
+
+            return path;
+        }
+
+        public static string ResolveLinks(string path, int maxDepth = 32)
+        {
+            path = Path.GetFullPath(path);
+            string resolvedPath = Path.GetPathRoot(path);
+            string[] parts = path.Substring(resolvedPath.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                resolvedPath = Path.Combine(resolvedPath, parts[i]);
+
+                string linkTarget = null;
+
+                try
+                {
+                    linkTarget = new DirectoryInfo(resolvedPath).LinkTarget;
+                }
+                catch
+                {
+                }
+
+                if (!string.IsNullOrEmpty(linkTarget))
+                {
+                    if (maxDepth <= 0)
+                    {
+                        return path;
+                    }
+
+                    string targetPath = Path.GetFullPath(linkTarget, Path.GetDirectoryName(resolvedPath));
+                    string remainingPath = string.Join(Path.DirectorySeparatorChar, parts, i + 1, parts.Length - i - 1);
+                    return ResolveLinks(Path.Combine(targetPath, remainingPath), maxDepth - 1);
+                }
+            }
+
+            return resolvedPath;
+        }
+
         public static string SanitizeFileName(string fileName, string replaceWith = "")
         {
             char[] invalidChars = Path.GetInvalidFileNameChars();

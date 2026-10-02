@@ -143,6 +143,16 @@ internal static class PersonalPathManager
 
     private static void EnsurePersonalFolder()
     {
+        if (!string.IsNullOrEmpty(CustomPersonalPath))
+        {
+            string personalFolder = AppPaths.PersonalFolder;
+            string traversablePath = FileHelpers.GetTraversablePath(personalFolder);
+            if (!traversablePath.Equals(personalFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                CustomPersonalPath = traversablePath;
+            }
+        }
+
         if (Directory.Exists(AppPaths.PersonalFolder))
         {
             return;

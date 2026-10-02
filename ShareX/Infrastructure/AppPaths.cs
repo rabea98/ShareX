@@ -37,8 +37,8 @@ internal static class AppPaths
     internal const string HistoryFileNameOld = "History.json";
     internal const string LogsFolderName = "Logs";
 
-    internal static readonly string DefaultPersonalFolder =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), ApplicationInfo.Name);
+    internal static readonly string DefaultPersonalFolder = FileHelpers.GetTraversablePath(
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), ApplicationInfo.Name));
     internal static readonly string PortablePersonalFolder = FileHelpers.GetAbsolutePath(ApplicationInfo.Name);
     internal static readonly string PortableCheckFilePath = FileHelpers.GetAbsolutePath("Portable");
     internal static readonly string SteamInAppFilePath = FileHelpers.GetAbsolutePath("Steam");
